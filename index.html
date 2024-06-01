@@ -1,0 +1,724 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        #score-counter {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px;
+            background-color: #333;
+            border-bottom-right-radius: 10px;
+            color: white;
+            z-index: 999;
+        }
+
+        #quiz-container {
+            max-width: 600px;
+            margin: auto;
+            padding: 60px 20px 20px; /* تم تعديل ال padding ليضمن عدم تغطية الصورة */
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            position: relative; /* تمت إضافة position: relative; للسماح لـ #score-counter بالتحكم فيه */
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: white;
+            background-color: #2196F3;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0c0c0c;
+        }
+
+        #timer {
+            margin-bottom: 10px;
+        }
+
+        #result-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-text {
+            margin-bottom: 10px;
+        }
+
+        .correct {
+            background-color: green;
+            color: white;
+        }
+
+        .incorrect {
+            background-color: red;
+            color: white;
+        }
+
+        /* CSS for displaying images to fit the screen */
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="score-counter">Score: <span id="score">0</span></div>
+
+    <div id="quiz-container">
+        <img id="question-image" src="" alt="Question Image">
+        <div id="choices"></div>
+        <button onclick="checkAnswer()">Submit Answer</button>
+        <p id="timer"></p>
+    </div>
+
+    <div id="result-container">
+        <h2>Quiz Result</h2>
+        <p class="result-text" id="result"></p>
+        <div id="correct-answers"></div>
+        <button id="retryBtn" style="display: none;" onclick="retryQuiz()">Retry Quiz</button>
+    </div>
+
+    <script>
+        var currentQuestion = 0;
+        var score = 0;
+        var timeLeft = 1800; // تحديد عدد الثواني
+        var timerInterval;
+
+        var quizData = [
+
+             {
+    "question": "السن المناسب لرياض الاطفال هو 4 سنوات",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+              {
+                question: "مؤسس رياض الاطفال  ",
+                choices: ["واطسون", "جان بياجيه", "فرد ريك زوبل"],
+            correctAnswer: "فرد ريك زوبل"
+              },
+                           {
+    "question": "الانسان من وجهه نظر علماء النظرية الحتميه هو كائن اجتماعى",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+             {
+    "question": "نظرية الجشطالت مبنيه علي ادراك الكل",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+           {
+    "question": "تلميذ لديه اعاقه عقليه بسبب تدنى مستوى الذكاء يحتمل ان تكون المشكله فى الوراثه",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+           {
+    "question": "اول من اهتم بالتربيه الحركيه جاك روسو و فروبل وبستلوزى",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+          
+       {
+                question: " اذا كان معامل السهولة 60 فى المائه فان معامل الصعوبه",
+                choices: ["40", "100", "60"],
+                correctAnswer: "40"
+            },
+          
+            {
+                question: " معلم طلب من طالب يترجم قطعه يندرج هذا الي اي هدف من اهداف بلوم",
+                choices: ["الفهم", "التذكر", "التركيب"],
+                correctAnswer: "الفهم"
+            },
+          
+          {
+                question: " اذا طلب المعلم من الطلاب ان يفحصوا اشكال بيانيه ثم يطلب منهم التعبير عنها فى صوره تقريرية يندرج تحت ",
+                choices: ["الفهم", "التذكر", "التركيب"],
+                correctAnswer: "الفهم"
+            },
+          
+          {
+                question: " فى التعليم التعاوني يتم تقسيم المجموعات حيث كل مجموعه تحتوى علي ",
+                choices: ["من خمسه ل عشره", "من اربعه ل سته", "من سته ل تسعه"],
+                correctAnswer: "من اربعه ل سته"
+            },
+          
+
+                       {
+    "question": "الحصيله اللغويه لطفل عمره 5 سنوات 3000كلمه",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+          {
+                question: " اذا طلبت المعلمة من التلميذ ان يرسموا اشكال ويخرجوا منها كلمات جديده",
+                choices: ["نظرية معرفيه", "نظرية بنائية"],
+                correctAnswer: "نظرية بنائية"
+            },
+          
+             {
+    "question": "يتعمد طفل افساد الفصل ثم يتهم زميله -- نوع الكذب هنا انتقامى",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+          {
+                question: " استراتيجية يستخدم فيها التعبير عن اكبر قدر من المعلومات ",
+                choices: ["العصف الذهنى", "التعليم التعاوني", "التعليم الالكتروني"],
+                correctAnswer: "العصف الذهنى"
+            },
+
+                         {
+    "question": "اعلى مستويات القياس هو النسبي",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+        
+
+{
+
+
+"question": "لا بد ان يحدد المعلم اهدافه قبل الدرس",
+  "choices": [ "صح",  "خطأ"],
+    "correctAnswer": "صح"
+},
+
+{
+
+
+"question": "العصف الذهنى يعتبر تفكير ابداعي",
+  "choices": [ "صح",  "خطأ"],
+    "correctAnswer": "صح"
+},
+
+{
+
+
+"question": "أمطار افكار هو عصف ذهنى",
+  "choices": [ "صح",  "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+
+{
+                question: "قام المعلم باختبار التلاميذ نجح منهم 10 من 40 طالب - حدد المعلم ان مستوى الطالب صعيف - فيعتبر ما قام به المعلم",
+            choices: ["قياس وتقويم", "تقويم وتشخيص", "قياس تقييم"],
+            correctAnswer: "قياس تقييم"
+              },
+
+
+              {
+                question: "لحفاظ المعلم على وقت الحصة",
+            choices: ["توجيه التلاميذ", "تحديد الاهداف", "تنظيم الوقت"],
+            correctAnswer: "تنظيم الوقت"
+              },
+              
+             
+              {
+    "question": "الاستراتيجية العصف الذهنى تحفز التفكير الابداعى التباعدى  ",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+{
+    "question": "التقويم الذى يصاغ نتائجه بصورة تقريرية لاتخاذ قرار بتطوير الموقف التعليمى هو تقويم ختامى",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+
+              {
+                question: "صاحب النظرية المعرفيه",
+            choices: ["واطسون", "جان بياجيه", "فرد ريك زوبل"],
+            correctAnswer: "جان بياجيه"
+              },
+
+              {
+                question: "صاحب المدرسة السلوكية",
+                choices: ["واطسون", "جان بياجيه", "فرد ريك زوبل"],
+            correctAnswer: "واطسون"
+              },
+
+
+              {
+    "question": "التذكر من الاهداف المعرفيه",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+              
+              {
+    "question": "الفهم من الاهداف المعرفيه",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+              
+{
+    "question": "التطبيق من الاهداف المعرفيه",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+              
+{
+    "question": "التحليل من الاهداف المعرفيه",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+              
+{
+    "question": "التركيب من الاهداف المعرفيه",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+              
+{
+    "question": "التقويم من الاهداف المعرفيه",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+              {
+                question: "الاستقرائية بتهتم بــ",
+            choices: ["قياس وتقيم", "التعلم", "سلوك المتعلم"],
+            correctAnswer: "سلوك المتعلم"
+              },
+              {
+    "question": "من الطرق المناسبه التى يستخدمها المعلم لاصحاب صعوبات التعلم هي تجزئة المهمه",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+{
+    "question": "من مقاييس صعوبات التعلم مقياس الاستبعاد ومقياس التباين",
+    "choices": ["صح", "خطأ"],
+    "correctAnswer": "صح"
+},
+
+
+              {
+                question: "اللعب المناسب للطفوله المبكرة ",
+            choices: ["الاستكشافى", "الايهامى", "الاجتماعي"],
+            correctAnswer: "الايهامى"
+              },
+
+              {
+                question: "تعريف التغذيه الراجعة",
+            choices: ["شكل من اشكال التصحيح والارشاد والتوجيه", "معلومات يقدمها المعلم للطالب توضح له الأخطاء التي وقع فيها ومقدار تقدمه", "ارجاع المعلومات مره اخرى "],
+            correctAnswer:  "معلومات يقدمها المعلم للطالب توضح له الأخطاء التي وقع فيها ومقدار تقدمه"
+              },
+
+              {
+                question: "فوائد اللعب للاطفال",
+            choices: ["جسمية", "اجتماعيه", "ذهنيه","كل ماسبق"],
+            correctAnswer:"كل ماسبق"
+              },
+              {
+    "question": "متى يحدث التقويم البنائي أو التكويني",
+    "choices": [
+        "أ. قبل بداية العملية التعليمية.",
+        "ب. بعد انتهاء العملية التعليمية.",
+        "ج. أثناء العملية التعليمية.",
+        "د. في نهاية العام الدراسي."
+    ],
+    "correctAnswer": "ج. أثناء العملية التعليمية."
+},
+{
+    "question": "ما اسم التقويم الذي يتم للطالب قبل الدرس؟",
+    "choices": [
+        "أ. تقويم تكويني",
+        "ب. تقويم تشخيصي",
+        "ج. تقويم مبدئي",
+        "د. تقويم ختامي"
+    ],
+    "correctAnswer": "ج. تقويم مبدئي"
+},
+{
+    question: "ما هو تعريف الاستقراء",
+    choices: [
+      "عملية البدء من القواعد العامة للوصول إلى استنتاجات محددة.",
+      "عملية البدء من الملاحظات والبيانات الخاصة للوصول إلى قواعد عامة أو استنتاجات.",
+      "عملية البدء من المشاعر الشخصية للوصول إلى أفكار جديدة.",
+      "عملية البدء من التجارب الشخصية للوصول إلى حقائق علمية."
+    ],
+    correctAnswer: "عملية البدء من الملاحظات والبيانات الخاصة للوصول إلى قواعد عامة أو استنتاجات."
+  },
+  {
+    question: "ما هي إحدى مزايا استخدام الاستقراء في التربية",
+    choices: [
+      "يساعد الطلاب على تذكر المعلومات بشكل أفضل.",
+      "يساعد الطلاب على فهم المفاهيم بشكل أفضل.",
+      "يساعد الطلاب على تطبيق ما تعلموه على مواقف جديدة.",
+      "يساعد الطلاب على التفكير بشكل إبداعي."
+    ],
+    correctAnswer: "يساعد الطلاب على فهم المفاهيم بشكل أفضل."
+  },
+
+  {
+    question: "ما هو أحد الأمثلة على استخدام الاستقراء في التربية",
+    choices: [
+      "قراءة كتاب عن تاريخ مصر القديمة.",
+      "مشاهدة فيديو عن دورة حياة الفراشة.",
+      "إجراء تجربة علمية لاختبار تأثير درجة حرارة الماء على نمو نبات.",
+      "كتابة قصة قصيرة عن مغامرة خيالية."
+    ],
+    correctAnswer: "إجراء تجربة علمية لاختبار تأثير درجة حرارة الماء على نمو نبات."
+  },
+  {
+    question: "ما هو أحد الأسئلة التي يمكن استخدامها لتعزيز الاستقراء في التربية",
+    choices: [
+      "ما هي المعلومات التي تدعم هذا الاستنتاج؟",
+      "ما هي القواعد العامة التي يمكن استخلاصها من هذه الملاحظات؟",
+      "كيف يمكن تطبيق هذه المعلومات على موقف جديد؟",
+      "ما هي المشاعر التي تثيرها هذه المعلومات؟"
+    ],
+    correctAnswer:   "ما هي القواعد العامة التي يمكن استخلاصها من هذه الملاحظات؟"
+  },
+{
+    question: "ما هو تعريف الاستنباط",
+    choices: [
+      "عملية البدء من الملاحظات والبيانات الخاصة للوصول إلى قواعد عامة أو استنتاجات.",
+      "عملية البدء من القواعد العامة أو المبادئ للوصول إلى استنتاجات محددة.",
+      "عملية البدء من المشاعر الشخصية للوصول إلى أفكار جديدة.",
+      "عملية البدء من التجارب الشخصية للوصول إلى حقائق علمية."
+    ],
+    correctAnswer: "عملية البدء من القواعد العامة أو المبادئ للوصول إلى استنتاجات محددة."
+  },
+  {
+    question: "ما هي إحدى مزايا استخدام الاستنباط في التربية",
+    choices: [
+      "يساعد الطلاب على تذكر المعلومات بشكل أفضل.",
+      "يساعد الطلاب على فهم المفاهيم بشكل أفضل.",
+      "يساعد الطلاب على تطبيق ما تعلموه على مواقف جديدة.",
+      "يساعد الطلاب على التفكير بشكل منطقي."
+    ],
+    correctAnswer: "يساعد الطلاب على التفكير بشكل منطقي."
+  },
+  {
+    question: "ما هو أحد عيوب استخدام الاستنباط في التربية",
+    choices: [
+    "يمكن أن يكون الاستنباط مضللاً إذا كانت القواعد العامة أو المبادئ غير صحيحة.",
+      "يمكن أن يكون الاستنباط صعبًا على الطلاب الذين يفتقرون إلى مهارات التفكير النقدي.",
+      "يمكن أن يكون الاستنباط مضيعة للوقت.",
+      "يمكن أن يكون الاستنباط غير فعال مع الطلاب الذين يفضلون التعلم من خلال الممارسة العملية."
+    ],
+    correctAnswer: "يمكن أن يكون الاستنباط مضللاً إذا كانت القواعد العامة أو المبادئ غير صحيحة."
+  },
+
+{
+  "question": "كيف ستتصرف إذا نشبت مشاجرة بين طالبين أثناء الحصة",
+  "choices": [
+    "ستتوقف عن التدريس وتذهب لفض المشاجرة بنفسك.",
+    "ستصرخ على الطلاب المتشاجرين لتهدئتهم.",
+    "ستطلب من أحد الطلاب المتشاجرين مغادرة الحصة.",
+    "ستطلب من الطلاب المتشاجرين التحدث معك بعد الحصة."
+  ],
+  "correctAnswer": "ستطلب من الطلاب المتشاجرين التحدث معك بعد الحصة."
+},
+
+{
+    "question": "في سؤال اختياري من خمسة اختيارات، ما هي نسبة الاحتمال لكل اختيار",
+    "choices": ["20%", "25%", "30%", "35%", "40%"],
+    "correctAnswer": "20%"
+},
+{
+  "question": "ما هو أبسط مقياس للتشتت",
+  "choices": ["(أ) الانحراف المعياري", "(ب) التباين", "(ج) المدى", "(د) جميع ما سبق"],
+  "correctAnswer": "(ج) المدى"
+},
+{
+     "question": "ما هو الأنا",
+      "choices": ["الشعور بالذات.", "الجزء الواعي من العقل.", "الجزء اللاواعي من العقل.", "الجزء الذي يتفاعل مع العالم الخارجي."],
+    "correctAnswer": "الشعور بالذات."
+},
+
+
+{
+  "question": "هل يتكامل التوجيه والإرشاد مع بعضهما البعض لتقديم خدمات شاملة للطلاب",
+  "choices": [
+    "صح",
+    "خطأ"
+  ],
+  "correctAnswer": "صح"
+},
+{
+  "question": "ما هو أبسط مستوى في تصنيف بلوم للأهداف المعرفية",
+  "choices": [
+    "التذكر",
+    "الفهم",
+    "التطبيق",
+    "التحليل"
+  ],
+  "correctAnswer": "التذكر"
+},
+                  {
+  "question": "ما هو العلاج النفسي",
+  "choices": [
+    "دواء لعلاج الاضطرابات النفسية.",
+    "نهج لعلاج مشاكل الصحة العقلية من خلال التحدث مع أخصائي.",
+    "نوع من الرياضة لتحسين الصحة النفسية.",
+    "نظام غذائي خاص لعلاج الاضطرابات النفسية."
+  ],
+  "correctAnswer": "نهج لعلاج مشاكل الصحة العقلية من خلال التحدث مع أخصائي."
+},
+{
+  "question": "ما هو تعريف الإرشاد النفسي",
+  "choices": [
+    "هو العلم الذي يهتم بإيصال الفرد إلى حالة التوافق الشخصي والاجتماعي والصحة النفسية.",
+    "هو العلم الذي يهتم بدراسة السلوك الإنساني.",
+    "هو العلم الذي يهتم بعلاج الأمراض النفسية.",
+    "هو العلم الذي يهتم بتطوير المهارات الشخصية."
+  ],
+  "correctAnswer": "هو العلم الذي يهتم بإيصال الفرد إلى حالة التوافق الشخصي والاجتماعي والصحة النفسية."
+},
+  {
+  "question": "يعد التقويم الكمي و النوعي من أهم أدوات قياس الأداء في أي مؤسسة.",
+  "choices": [
+    "صح",
+    "خطأ"
+  ],
+  "correctAnswer": "صح"
+},      
+  {
+  "question": "كم عدد مراحل نظرية جان بياجيه في النمو المعرفي",
+  "choices": [
+    "2",
+    "3",
+    "4",
+    "5"
+  ],
+  "correctAnswer": "4"
+},
+          {
+    "question": "الصدق التلازمي هو أكثر أنواع الصدق ملاءمة للاختبارات التحصيلية ",
+    "choices": ["صحيح", "خاطئ"],
+    "correctAnswer": "صحيح"
+},
+                    {
+    "question": "في حال نشوب خلاف بينك وبين مديرك في العمل، فما هي الخطوة الأولى التي يجب عليك اتباعها ",
+    "choices": [
+        "الدخول في نقاش ساخن مع المدير.",
+        "تقديم استقالتك من العمل.",
+        "محاولة حل المشكلة بهدوء واحترام.",
+        "تجاهل المشكلة والتركيز على عملك."
+    ],
+    "correctAnswer": "محاولة حل المشكلة بهدوء واحترام."
+},
+          {
+        "question": "كم تبلغ مدة مرحلة المراهقة عادة",
+        "choices": [
+            "4 سنوات",
+            "6 سنوات",
+            "8 سنوات",
+            "10 سنوات"
+        ],
+        "correctAnswer": "6 سنوات"
+    },
+          {
+    "question": "طالب أنهى جميع واجباته المدرسية قبل الموعد المحدد. ما هو شكل التعزيز الإيجابي المناسب في هذه الحالة ",
+    "choices": [
+        "إعفاء الطالب من حضور أحد الحصص الدراسية.",
+        "منح الطالب جائزة مادية.",
+        "السماح للطالب بقضاء وقت فراغ إضافي.",
+        "حذف عدد من الواجبات المدرسية"
+    ],
+    "correctAnswer": "حذف عدد من الواجبات المدرسية"
+},
+          {
+    "question": "ما هي أنواع التقويم على حسب الوقت ",
+    "choices": [
+        "أ. تقويم مبدئي",
+        "ب. تقويم تكويني",
+        "ج. تقويم تشخيصي",
+        "د. تقويم ختامي",
+        "ه. كل ما سبق"
+    ],
+    "correctAnswer": "ه. كل ما سبق"
+}
+        
+        ];
+
+        // قم بترتيب الأسئلة بشكل عشوائي
+        shuffleArray(quizData);
+
+        function shuffleArray(array) {
+            for (var i = array.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+            return array;
+        }
+
+        function loadQuestion() {
+            var currentQuiz = quizData[currentQuestion];
+
+            var questionImageElement = document.getElementById('question-image');
+            var choicesElement = document.getElementById('choices');
+
+            if (currentQuiz.imageSrc) {
+                questionImageElement.src = currentQuiz.imageSrc; // تعيين مصدر الصورة
+                questionImageElement.style.display = 'block'; // عرض الصورة
+            } else {
+                questionImageElement.style.display = 'none'; // إخفاء الصورة إذا لم تكن متاحة
+            }
+
+            choicesElement.innerHTML = '';
+
+            // عرض السؤال كنص عادي إذا لم يكن هناك صورة
+            if (!currentQuiz.imageSrc) {
+                choicesElement.innerHTML += '<p>' + currentQuiz.question + '</p>';
+            }
+
+            for (var i = 0; i < currentQuiz.choices.length; i++) {
+                var choice = currentQuiz.choices[i];
+                choicesElement.innerHTML += '<label><input type="radio" name="choice" value="' + choice + '"> ' + choice + '</label>';
+            }
+
+            startTimer(); // بدء الموقت عند تحميل كل سؤال
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(function () {
+                document.getElementById('timer').innerHTML = 'Time Left: ' + timeLeft + 's';
+
+                if (timeLeft === 0) {
+                    clearInterval(timerInterval);
+                    alert('Time is up!'); // عرض رسالة انتهاء الوقت
+                    showResult(); // عرض النتيجة النهائية عند انتهاء الوقت
+                } else {
+                    timeLeft--;
+                }
+            }, 1000);
+        }
+
+        function checkAnswer() {
+            var selectedOption = document.querySelector('input[name="choice"]:checked');
+            if (!selectedOption) {
+                alert('Please select an answer.');
+                return;
+            }
+
+            var userAnswer = selectedOption.value;
+            var currentQuiz = quizData[currentQuestion];
+
+            var choicesLabels = document.querySelectorAll('label');
+
+            for (var i = 0; i < choicesLabels.length; i++) {
+                if (currentQuiz.correctAnswer === currentQuiz.choices[i]) {
+                    choicesLabels[i].classList.add('correct');
+                } else {
+                    choicesLabels[i].classList.add('incorrect');
+                }
+            }
+
+            if (userAnswer === currentQuiz.correctAnswer) {
+                score++;
+                document.getElementById('score').textContent = score;
+            }
+
+            clearInterval(timerInterval); // قبل التحقق من الإجابة، قم بإيقاف الموقت
+
+            currentQuestion++;
+
+            if (currentQuestion < quizData.length) {
+                setTimeout(function () {
+                    loadQuestion();
+                    resetColors();
+                }, 3000);
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            var resultElement = document.getElementById('result');
+            var correctAnswersElement = document.getElementById('correct-answers');
+
+            resultElement.innerHTML = 'Your Score: ' + score + ' out of ' + quizData.length;
+
+            correctAnswersElement.innerHTML = '<h3>Correct Answers:</h3>';
+            for (var i = 0; i < quizData.length; i++) {
+                var q = quizData[i];
+                var imgSrc = q.imageSrc;
+                var imgElement = '<img src="' + imgSrc + '" alt="Question Image">';
+                correctAnswersElement.innerHTML += imgElement + '<strong>Q: ' + q.question + '</strong><br>A: ' + q.correctAnswer + '<br>';
+            }
+
+            document.getElementById('result-container').style.display = 'block';
+            document.getElementById('retryBtn').style.display = 'block';
+        }
+
+        function resetColors() {
+            var choicesLabels = document.querySelectorAll('label');
+            for (var i = 0; i < choicesLabels.length; i++) {
+                choicesLabels[i].classList.remove('correct', 'incorrect'); // إزالة الأنماط المضافة سابقًا
+            }
+        }
+
+        function retryQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            timeLeft = 1800; // إعادة تعيين الوقت للقيمة الأصلية
+
+            // قم بترتيب الأسئلة بشكل عشوائي عند إعادة المحاولة
+            shuffleArray(quizData);
+
+            document.getElementById('score').textContent = score; // تحديث قيمة العداد إلى الصفر
+            loadQuestion();
+            resetColors();
+
+            document.getElementById('result-container').style.display = 'none';
+            document.getElementById('retryBtn').style.display = 'none';
+        }
+
+        loadQuestion();
+    </script>
+
+</body>
+
+</html>
